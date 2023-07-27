@@ -62,10 +62,17 @@ struct EffectConstant {
 	T step;
 };
 
+struct EffectColor {
+	float redValue;
+	float greenValue;
+	float blueValue;
+	float alphaValue;
+};
+
 struct EffectParameterDesc {
 	std::string name;
 	std::string label;
-	std::variant<EffectConstant<float>, EffectConstant<int>> constant;
+	std::variant<EffectConstant<float>, EffectConstant<int>, EffectColor> constant;
 };
 
 struct EffectPassDesc {

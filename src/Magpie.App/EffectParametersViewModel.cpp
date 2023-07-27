@@ -98,7 +98,7 @@ EffectParametersViewModel::EffectParametersViewModel(uint32_t scalingModeIdx, ui
 			);
 			floatParamItem.PropertyChanged({ this, &EffectParametersViewModel::_ScalingModeFloatParameter_PropertyChanged });
 			floatParams.push_back(floatParamItem);
-		} else {
+		} else if (param.constant.index() == 1) {
 			const EffectConstant<int>& constant = std::get<1>(param.constant);
 			if (constant.minValue == 0 && constant.maxValue == 1 && constant.step == 1) {
 				Magpie::App::ScalingModeBoolParameter boolParamItem(
@@ -120,6 +120,25 @@ EffectParametersViewModel::EffectParametersViewModel(uint32_t scalingModeIdx, ui
 				floatParamItem.PropertyChanged({ this, &EffectParametersViewModel::_ScalingModeFloatParameter_PropertyChanged });
 				floatParams.push_back(floatParamItem);
 			}
+		} else {
+			const EffectColor& constant = std::get<2>(param.constant);
+			int defaultValue = (int)std::lroundf(constant.redValue * 255.0);
+			defaultValue = defaultValue << 8;
+			defaultValue += (int)std::lroundf(constant.greenValue * 255.0);
+			defaultValue = defaultValue << 8;
+			defaultValue += (int)std::lroundf(constant.blueValue * 255.0);
+			defaultValue = defaultValue << 8;
+			defaultValue += (int)std::lroundf(constant.alphaValue * 255.0);
+			Magpie::App::ScalingModeFloatParameter floatParamItem(
+				i,
+				StrUtils::UTF8ToUTF16(param.label.empty() ? param.name : param.label),
+				paramValue.has_value() ? *paramValue : (float)defaultValue,
+				(float)MININT32,
+				(float)MAXINT32,
+				1.0
+			);
+			floatParamItem.PropertyChanged({ this, &EffectParametersViewModel::_ScalingModeFloatParameter_PropertyChanged });
+			floatParams.push_back(floatParamItem);
 		}
 	}
 	if (!boolParams.empty()) {

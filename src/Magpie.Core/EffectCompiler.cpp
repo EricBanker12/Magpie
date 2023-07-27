@@ -374,6 +374,7 @@ static UINT ResolveHeader(std::string_view block, EffectDesc& desc, bool noCompi
 
 static UINT ResolveParameter(std::string_view block, EffectDesc& desc) {
 	// 必需的选项：DEFAULT, MIN, MAX, STEP
+	// float4 : RED, GREEN, BLUE, ALPHA
 	// 可选的选项：LABEL
 
 	std::bitset<5> processed;
@@ -397,6 +398,11 @@ static UINT ResolveParameter(std::string_view block, EffectDesc& desc) {
 	std::string_view minValue;
 	std::string_view maxValue;
 	std::string_view stepValue;
+
+	std::string_view redValue;
+	std::string_view greenValue;
+	std::string_view blueValue;
+	std::string_view alphaValue;
 
 	while (true) {
 		if (!CheckNextToken<true>(block, META_INDICATOR)) {
@@ -456,6 +462,42 @@ static UINT ResolveParameter(std::string_view block, EffectDesc& desc) {
 			if (GetNextString(block, stepValue)) {
 				return 1;
 			}
+		} else if (t == "RED") {
+			if (processed[0]) {
+				return 1;
+			}
+			processed[0] = true;
+
+			if (GetNextString(block, redValue)) {
+				return 1;
+			}
+		} else if (t == "GREEN") {
+			if (processed[2]) {
+				return 1;
+			}
+			processed[2] = true;
+
+			if (GetNextString(block, greenValue)) {
+				return 1;
+			}
+		} else if (t == "BLUE") {
+			if (processed[3]) {
+				return 1;
+			}
+			processed[3] = true;
+
+			if (GetNextString(block, blueValue)) {
+				return 1;
+			}
+		} else if (t == "ALPHA") {
+			if (processed[4]) {
+				return 1;
+			}
+			processed[4] = true;
+
+			if (GetNextString(block, alphaValue)) {
+				return 1;
+			}
 		} else {
 			return 1;
 		}
@@ -507,6 +549,28 @@ static UINT ResolveParameter(std::string_view block, EffectDesc& desc) {
 		}
 
 		if (constant.defaultValue < constant.minValue || constant.maxValue < constant.defaultValue) {
+			return 1;
+		}
+	} else if (token == "float4") {
+		EffectColor& constant = paramDesc.constant.emplace<2>();
+
+		if (GetNextNumber(redValue, constant.redValue)) {
+			return 1;
+		}
+		if (GetNextNumber(greenValue, constant.greenValue)) {
+			return 1;
+		}
+		if (GetNextNumber(blueValue, constant.blueValue)) {
+			return 1;
+		}
+		if (GetNextNumber(alphaValue, constant.alphaValue)) {
+			return 1;
+		}
+
+		if (constant.redValue > 1.0 || constant.greenValue > 1.0 || constant.blueValue > 1.0 || constant.alphaValue > 1.0) {
+			return 1;
+		}
+		if (constant.redValue < 0.0 || constant.greenValue < 0.0 || constant.blueValue < 0.0 || constant.alphaValue < 0.0) {
 			return 1;
 		}
 	} else {
@@ -1476,9 +1540,10 @@ cbuffer __CB2 : register(b1) {
 	}
 
 	if (!(desc.flags & EffectFlags::InlineParams)) {
+		std::string constantTypes[3] = { "float ", "int ", "float4 " };
 		for (const auto& d : desc.params) {
 			cbHlsl.append("\t")
-				.append(d.constant.index() == 0 ? "float " : "int ")
+				.append(constantTypes[d.constant.index()])
 				.append(d.name)
 				.append(";\n");
 		}

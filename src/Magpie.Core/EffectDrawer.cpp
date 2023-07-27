@@ -365,7 +365,7 @@ bool EffectDrawer::Initialize(
 				}
 
 				pCurParam->floatVal = value;
-			} else {
+			} else if (paramDesc.constant.index() == 1) {
 				const EffectConstant<int>& constant = std::get<1>(paramDesc.constant);
 				int value = constant.defaultValue;
 
@@ -376,6 +376,21 @@ bool EffectDrawer::Initialize(
 						Logger::Get().Error(StrUtils::Concat("参数 ", paramDesc.name, " 的值非法"));
 						return false;
 					}
+				}
+
+				pCurParam->intVal = value;
+			} else {
+				const EffectColor& constant = std::get<2>(paramDesc.constant);
+				int value = (int)std::lroundf(constant.redValue * 255.0);
+				value = value << 8;
+				value += (int)std::lroundf(constant.greenValue * 255.0);
+				value = value << 8;
+				value += (int)std::lroundf(constant.blueValue * 255.0);
+				value = value << 8;
+				value += (int)std::lroundf(constant.alphaValue * 255.0);
+
+				if (it != option.parameters.end()) {
+					value = (int)std::lroundf(it->second);
 				}
 
 				pCurParam->intVal = value;
